@@ -27,6 +27,7 @@ jobs:
         # deploy-on-merge workflow would hard-fail). .ci/charly is workspace-relative,
         # so the paths resolve.
         run: |
+          mkdir -p .ci
           git clone --depth 1 --branch v2026.238.1242 https://github.com/opencharly/charly.git .ci/charly
 
       - uses: actions/setup-go@v5
