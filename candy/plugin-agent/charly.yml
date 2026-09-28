@@ -1,7 +1,5 @@
-version: 2026.232.0520
 plugin-agent:
     candy:
-        version: 2026.199.1330
         description: |-
             Headless, daemon-free agent control plugin owning CUE-validated agent and
             agent-team kinds plus reflected `charly agent`, `charly tui`, and
