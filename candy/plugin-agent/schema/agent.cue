@@ -4,9 +4,10 @@
 // two ways (the same contract the reference exampleprobe/process, the package-group
 // plugin, and core `spec` use):
 //
-//  1. GENERATE the Go param struct — `cue exp gengotypes` (driven by task cue:gen,
-//     which wraps this with `package params` + `@go(params)`) emits
-//     ../params/cue_types_gen.go.
+//  1. GENERATE the Go param struct — the schema→Go pipeline: concat this file under a
+//     `package params` + `@go(params)` header (`internal/schemagen -mode=concat
+//     -pkg=params` in opencharly/spec), `cue exp gengotypes`, then `-mode=retag` to
+//     double every json tag with a yaml tag → ../params/cue_types_gen.go.
 //  2. VALIDATE authored input AT RUNTIME — the builtin serves this source over the
 //     Describe channel (InProcTransport) exactly like an external serves it over
 //     gRPC; the host splices it onto the base (base ++ plugin) and validates every
