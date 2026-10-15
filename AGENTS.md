@@ -44,8 +44,9 @@ Canonical files:
 - Edit the `plugin-agent:` candy entity, the Go source, and `schema/agent.cue`
   **together** — the schema is the single source for the kinds' `params/`
   structs.
-- The `tui-skill:` entity is the projected source for `/charly-automation:tui`;
-  keep it in step with any `command:tui` behaviour change.
+- The `tui-skill:` entity is the projected source for `/charly-agent:tui` (this
+  repo's own `agent` family); keep it in step with any `command:tui` behaviour
+  change.
 - Keep the tmux surface a typed facade — never construct remote tmux shell
   strings or access an operator tmux socket.
 
