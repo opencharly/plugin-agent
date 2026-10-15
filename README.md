@@ -47,7 +47,7 @@ interactive inspection.
 ## Related
 
 - Owning skills: `/charly-automation:agent` (the full control-plane surface) and
-  `/charly-automation:tui` (the `charly tui` UI, projected from the embedded
+  `/charly-agent:tui` (the `charly tui` UI, projected from the embedded
   `tui-skill:` entity).
 - `/charly-automation:tmux` — the typed persistent terminal sessions.
 - `/charly-internals:plugin` — the plugin/provider model.
