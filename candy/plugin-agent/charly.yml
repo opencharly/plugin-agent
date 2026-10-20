@@ -35,8 +35,5 @@ tui-skill:
         name: tui
         family: agent
         owner: plugin-agent
-        description: |-
-            `charly tui` — the terminal UI for the agent control plane: browse and drive agent
-            sessions, runs, and terminal channels interactively.
         triggers:
             - "`charly tui` / agent TUI / interactively browse agent sessions"
