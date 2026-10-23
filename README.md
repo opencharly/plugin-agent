@@ -47,8 +47,8 @@ interactive inspection.
 ## Related
 
 - Owning skills: `/charly-automation:agent` (the full control-plane surface) and
-  `/charly-agent:tui` (the `charly tui` UI, projected from the embedded
-  `tui-skill:` entity).
+  `/charly-agent:tui` (the `charly tui` UI) — both projected from this candy's own
+  `skill:` entities, with their bodies under `.agents/skills/`.
 - `/charly-automation:tmux` — the typed persistent terminal sessions.
 - `/charly-internals:plugin` — the plugin/provider model.
 - [`opencharly/charly`](https://github.com/opencharly/charly) — the charly CLI.
