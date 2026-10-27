@@ -59,3 +59,20 @@ agent-skill:
         owner: plugin-agent
         triggers:
             - "`charly agent` / agent control plane / sessions / runs / terminal channels / `charly tui` / MCP routing / agent target routing"
+
+# The one `type: agent` definition this candy's surface also owns: the operator
+# that DRIVES the control plane (`charly agent`, `charly tui`, `charly tmux`,
+# federation, endpoint replication, incident/RCA/recovery). Relocated by the
+# skills-only carrier retirement (opencharly/opencharly#600, #628) from the
+# `pod-charly-automation` carrier: its own prose opens "Use
+# `/charly-automation:agent` and `/charly-automation:tmux` before acting", so the
+# repo holding those two skills — this one — is where it belongs (AGENTS.md
+# Part II #5). Its body is the sibling `.agents/agents/<name>.md`, the path
+# `deploykit` reads for an `agent`-type node.
+agent-control-operator-skill:
+    skill:
+        type: agent
+        name: agent-control-operator
+        family: automation
+        owner: plugin-agent
+        model: inherit
