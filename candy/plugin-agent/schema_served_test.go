@@ -61,25 +61,27 @@ const vocabHarness = `
 type vocabProbe struct {
 	name  string // the key vocabHarness gives this table
 	label string // the table's own label in the served body
+	owner string // the definition the fed field lives in
+	field string // the field the table feeds
 	use   func(word string) string
 }
 
 // vocabProbes covers every vocabulary table this schema carries, and every field wired
 // to it. A new table belongs in vocabHarness and here.
 var vocabProbes = []vocabProbe{
-	{"mode", "_mode", func(w string) string {
+	{"mode", "_mode", "#AgCredentialMount", "mode", func(w string) string {
 		return fmt.Sprintf(`{#AgentInput: {command: ["c"], credential: [{src: "/h", dst: "/g", mode: %q}]}}`, w)
 	}},
-	{"evidence_policy", "_evidencePolicy", func(w string) string {
+	{"evidence_policy", "_evidencePolicy", "#AgentTeamInput", "evidence_policy", func(w string) string {
 		return fmt.Sprintf(`{#AgentTeamInput: {agents: [{name: "a", runtime: "pi"}], evidence_policy: %q}}`, w)
 	}},
-	{"transport", "_transport", func(w string) string {
+	{"transport", "_transport", "#AtTargetHop", "transport", func(w string) string {
 		return fmt.Sprintf(`{#AgentTeamInput: {agents: [{name: "a", runtime: "pi", target: {hops: [{transport: %q}]}}]}}`, w)
 	}},
-	{"persistence", "_persistence", func(w string) string {
+	{"persistence", "_persistence", "#AtTerminalProfile", "persistence", func(w string) string {
 		return fmt.Sprintf(`{#AgentTeamInput: {agents: [{name: "a", runtime: "pi", terminal_profile: {name: "t", entrypoint: ["bash"], persistence: %q}}]}}`, w)
 	}},
-	{"transcript", "_transcript", func(w string) string {
+	{"transcript", "_transcript", "#AtTerminalProfile", "transcript", func(w string) string {
 		return fmt.Sprintf(`{#AgentTeamInput: {agents: [{name: "a", runtime: "pi", terminal_profile: {name: "t", entrypoint: ["bash"], transcript: %q}}]}}`, w)
 	}},
 }
@@ -105,22 +107,40 @@ func servedSchema(t *testing.T) cue.Value {
 	return v
 }
 
-// schemaWordList returns the sorted alternatives of a disjunction at path — for an S3
-// enum, exactly the words its derived list feeds.
+// schemaWordList returns the sorted alternatives of the enum carried by the field
+// `field` of definition `owner` — for an S3 enum, exactly the words its derived list
+// feeds.
 //
-// The alternatives are read from the EXPRESSION, not from the text and not through
-// `String()`: on a disjunction that carries a default `String()` hands back the
-// default, which would read a whole catalog as one word.
-func schemaWordList(t *testing.T, v cue.Value, path string) []string {
+// The field is found by walking the definition's arcs with cue.Optional(true), because
+// most of the fields this schema feeds are OPTIONAL and a plain LookupPath refuses an
+// optional field. The alternatives are then read from the EXPRESSION, not from the text
+// and not through `String()`: on a disjunction that carries a default `String()` hands
+// back the default, which would read a whole word set as one word.
+func schemaWordList(t *testing.T, v cue.Value, owner, field string) []string {
 	t.Helper()
-	seen := map[string]bool{}
-	collectWords(t, path, v.LookupPath(cue.ParsePath(path)), 0, seen)
-	words := make([]string, 0, len(seen))
-	for w := range seen {
-		words = append(words, w)
+	path := owner + "." + field
+	sv := v.LookupPath(cue.ParsePath(owner))
+	if err := sv.Err(); err != nil {
+		t.Fatalf("%s does not resolve in the served schema: %v", owner, err)
 	}
-	sort.Strings(words)
-	return words
+	it, err := sv.Fields(cue.Optional(true))
+	if err != nil {
+		t.Fatalf("%s: enumerate fields: %v", owner, err)
+	}
+	seen := map[string]bool{}
+	for it.Next() {
+		if it.Selector().Unquoted() == field {
+			collectWords(t, path, it.Value(), 0, seen)
+			words := make([]string, 0, len(seen))
+			for w := range seen {
+				words = append(words, w)
+			}
+			sort.Strings(words)
+			return words
+		}
+	}
+	t.Fatalf("%s has no field %q", owner, field)
+	return nil
 }
 
 func collectWords(t *testing.T, path string, val cue.Value, depth int, seen map[string]bool) {
@@ -188,9 +208,10 @@ func TestVocabularyTablesNameTheirOwner(t *testing.T) {
 }
 
 // TestS3VocabularyTablesDriveTheirEnums proves, for every vocabulary table, that (a)
-// the derived word list IS the table's row set, and (b) each word is accepted where an
-// author uses it while a non-word is refused. (b) is what a table that is merely
-// DECLARED — never wired into the enum — fails.
+// the derived word list IS the table's row set, (b) the FIELD's own enum is that same
+// set — not a literal list that happens to equal it today — and (c) each word is
+// accepted where an author uses it while a non-word is refused. (c) is what a table
+// that is merely DECLARED, never wired into the enum, fails.
 func TestS3VocabularyTablesDriveTheirEnums(t *testing.T) {
 	v := servedSchema(t)
 	ctx := v.Context()
@@ -224,6 +245,12 @@ func TestS3VocabularyTablesDriveTheirEnums(t *testing.T) {
 		sort.Strings(words)
 		if fmt.Sprint(keys) != fmt.Sprint(words) {
 			t.Errorf("%q's derived list %v is not its table's row set %v", p.name, words, keys)
+		}
+		// The enum the AUTHOR meets at this field is the table's row set too — not
+		// merely a set that happens to accept every row today. A field written as a
+		// literal list equal to its table passes the comparison above and fails here.
+		if got := schemaWordList(t, v, p.owner, p.field); fmt.Sprint(got) != fmt.Sprint(keys) {
+			t.Errorf("%s.%s accepts %v but its table %q holds %v — the field is not wired to that table", p.owner, p.field, got, p.name, keys)
 		}
 		for _, w := range keys {
 			if err := v.Unify(ctx.CompileString(p.use(w))).Err(); err != nil {
