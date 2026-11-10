@@ -47,7 +47,7 @@
 #AgCredentialMount: {
 	src:       string & !=""
 	dst:       string & !=""
-	mode?:     "copy" | "bind"
+	mode?:     or(_modeWord)
 	optional?: bool
 }
 
@@ -60,7 +60,7 @@
 	edges?: [...#AtEdge]
 	coordinator?:     string
 	concurrency?:     int & >=1
-	evidence_policy?: "target" | "coordinator" | "both" @go(EvidencePolicy)
+	evidence_policy?: or(_evidencePolicyWord) @go(EvidencePolicy)
 }
 
 #AtMember: {
@@ -85,7 +85,7 @@
 }
 
 #AtTargetHop: {
-	transport:      "inproc" | "exec" | "ssh" | "grpc" | "tmux"
+	transport:      or(_transportWord)
 	address?:       string
 	user?:          string
 	port?:          int & >0 & <=65535
@@ -106,6 +106,32 @@
 	semantic_adapter?: string
 	keys?: [...string]
 	signals?: [...string]
-	persistence?: "none" | "detach" | "required"
-	transcript?:  "none" | "raw" | "screen" | "both"
+	persistence?: or(_persistenceWord)
+	transcript?:  or(_transcriptWord)
 }
+
+// --- vocabulary tables (S3) --------------------------------------------------
+// Every closed set of words is a table keyed by word, and its word list is
+// derived from the table and used as `or()` of that list (§10.1 S3, D-PAT-3).
+// The table and the enum it feeds therefore cannot disagree, and a new word is
+// ONE row here. `@vocab` names the owner (§3.1): these sets are compiled into THIS
+// plugin, so the owner is the plugin's own word `agent`.
+//
+// The two inline literal defaults #AgentInput already carries (`prompt_via:
+// *"argv" | "file"`, `output_format: *"" | "stream-json"`) are NOT unions written
+// out alternative by alternative: S3 permits a literal default inline, so they
+// stay where they are.
+_mode: {copy: {}, bind: {}} @vocab(agent)
+_modeWord: [for w, _ in _mode {w}]
+
+_evidencePolicy: {target: {}, coordinator: {}, both: {}} @vocab(agent)
+_evidencePolicyWord: [for w, _ in _evidencePolicy {w}]
+
+_transport: {inproc: {}, exec: {}, ssh: {}, grpc: {}, tmux: {}} @vocab(agent)
+_transportWord: [for w, _ in _transport {w}]
+
+_persistence: {none: {}, detach: {}, required: {}} @vocab(agent)
+_persistenceWord: [for w, _ in _persistence {w}]
+
+_transcript: {none: {}, raw: {}, screen: {}, both: {}} @vocab(agent)
+_transcriptWord: [for w, _ in _transcript {w}]
